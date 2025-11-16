@@ -2,6 +2,7 @@
   "name": "Smart Agriculture Assistant",
   "description": "An AI-powered agriculture assistant that identifies plants from photos, provides detailed care instructions, and answers your agriculture questions through an interactive chatbot.",
   "requestFramePermissions": [
-    "camera"
+    "camera",
+    "geolocation"
   ]
 }

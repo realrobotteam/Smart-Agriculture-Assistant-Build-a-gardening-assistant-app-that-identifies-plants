@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import Header from './components/Header';
 import PlantIdentifier from './components/PlantIdentifier';
@@ -5,10 +6,13 @@ import Chatbot from './components/Chatbot';
 import VideoAnalyzer from './components/VideoAnalyzer';
 import DiseaseDiagnoser from './components/DiseaseDiagnoser';
 import Footer from './components/Footer';
-import MyGarden from './components/MyGarden';
+import FarmLogbook from './components/FarmLogbook';
 import Community from './components/Community';
+import SmartAlerts from './components/SmartAlerts';
+import CropCalendar from './components/CropCalendar';
+import AgriculturalCalculators from './components/AgriculturalCalculators';
 
-type ActiveTab = 'identifier' | 'myGarden' | 'chat' | 'video' | 'diagnosis' | 'community';
+type ActiveTab = 'identifier' | 'logbook' | 'chat' | 'video' | 'diagnosis' | 'community' | 'alerts' | 'calendar' | 'calculators';
 
 function App() {
   const [activeTab, setActiveTab] = useState<ActiveTab>('identifier');
@@ -18,8 +22,11 @@ function App() {
       <Header activeTab={activeTab} setActiveTab={setActiveTab} />
       <main className="py-4 flex-grow">
         {activeTab === 'identifier' && <PlantIdentifier />}
-        {activeTab === 'myGarden' && <MyGarden />}
+        {activeTab === 'logbook' && <FarmLogbook />}
         {activeTab === 'diagnosis' && <DiseaseDiagnoser />}
+        {activeTab === 'calendar' && <CropCalendar />}
+        {activeTab === 'calculators' && <AgriculturalCalculators />}
+        {activeTab === 'alerts' && <SmartAlerts />}
         {activeTab === 'community' && <Community />}
         {activeTab === 'video' && <VideoAnalyzer />}
         {activeTab === 'chat' && <Chatbot />}

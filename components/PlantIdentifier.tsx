@@ -1,6 +1,7 @@
+
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { analyzePlantImage } from '../services/geminiService';
-import { PlantInfo, SavedPlant } from '../types';
+import { PlantInfo, SavedPlant, LogbookEntry } from '../types';
 import Spinner from './Spinner';
 import { CameraIcon } from './icons/CameraIcon';
 import { WaterDropIcon, SunIcon, SoilIcon, FertilizerIcon, PruningIcon, AlertTriangleIcon } from './icons/CareIcons';
@@ -14,7 +15,7 @@ const fileToBase64 = (file: File): Promise<string> =>
     reader.onerror = (error) => reject(error);
   });
 
-const MY_GARDEN_KEY = 'smartAgricultureMyGarden';
+const FARM_LOGBOOK_KEY = 'smartAgricultureFarmLogbook';
 
 const PlantIdentifier: React.FC = () => {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -23,29 +24,31 @@ const PlantIdentifier: React.FC = () => {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [myGarden, setMyGarden] = useState<SavedPlant[]>([]);
+  const [logbook, setLogbook] = useState<LogbookEntry[]>([]);
   const [isSaved, setIsSaved] = useState(false);
 
   useEffect(() => {
     try {
-      const savedGardenJSON = localStorage.getItem(MY_GARDEN_KEY);
-      if (savedGardenJSON) {
-        setMyGarden(JSON.parse(savedGardenJSON));
+      const savedLogbookJSON = localStorage.getItem(FARM_LOGBOOK_KEY);
+      if (savedLogbookJSON) {
+        setLogbook(JSON.parse(savedLogbookJSON));
       }
     } catch (e) {
-      console.error("Failed to load or parse My Garden from local storage:", e);
-      localStorage.removeItem(MY_GARDEN_KEY);
+      console.error("Failed to load or parse Farm Logbook from local storage:", e);
+      localStorage.removeItem(FARM_LOGBOOK_KEY);
     }
   }, []);
 
   useEffect(() => {
     if (plantInfo) {
-      const alreadyExists = myGarden.some(p => p.plantInfo.scientificName === plantInfo.scientificName);
+      const alreadyExists = logbook.some(entry => 
+        entry.type === 'identification' && entry.plantInfo.scientificName === plantInfo.scientificName
+      );
       setIsSaved(alreadyExists);
     } else {
       setIsSaved(false);
     }
-  }, [plantInfo, myGarden]);
+  }, [plantInfo, logbook]);
 
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -74,19 +77,21 @@ const PlantIdentifier: React.FC = () => {
     }
   };
 
-  const handleSaveToGarden = () => {
+  const handleSaveToLogbook = () => {
     if (!plantInfo || !imageBase64 || isSaved) return;
 
     const newPlant: SavedPlant = {
       id: Date.now().toString(),
+      type: 'identification',
+      date: new Date().toISOString(),
       imageDataUrl: imageBase64,
       plantInfo: plantInfo,
       notes: ''
     };
 
-    const updatedGarden = [...myGarden, newPlant];
-    setMyGarden(updatedGarden);
-    localStorage.setItem(MY_GARDEN_KEY, JSON.stringify(updatedGarden));
+    const updatedLogbook = [newPlant, ...logbook];
+    setLogbook(updatedLogbook);
+    localStorage.setItem(FARM_LOGBOOK_KEY, JSON.stringify(updatedLogbook));
   };
 
   const handleUploadClick = () => {
@@ -156,13 +161,13 @@ const PlantIdentifier: React.FC = () => {
                         <p className="text-md text-gray-500 italic">{plantInfo.scientificName}</p>
                     </div>
                     <button 
-                        onClick={handleSaveToGarden} 
+                        onClick={handleSaveToLogbook} 
                         disabled={isSaved}
                         className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-full transition-all duration-300 disabled:cursor-not-allowed disabled:opacity-60 bg-green-100 text-green-700 hover:bg-green-200"
-                        aria-label="ذخیره گیاه در باغ من"
+                        aria-label="ذخیره گیاه در دفتر مزرعه"
                     >
                         <LeafIcon className="w-4 h-4" />
-                        <span>{isSaved ? 'ذخیره شد' : 'ذخیره در باغ'}</span>
+                        <span>{isSaved ? 'ذخیره شد' : 'ذخیره در دفتر'}</span>
                     </button>
                 </div>
                 <p className="mt-2 text-gray-700">{plantInfo.description}</p>

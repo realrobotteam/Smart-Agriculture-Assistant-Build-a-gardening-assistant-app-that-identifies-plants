@@ -1,13 +1,17 @@
+
 import React, { useState } from 'react';
 import { CameraIcon } from './icons/CameraIcon';
 import { ChatIcon } from './icons/ChatIcon';
 import { VideoIcon } from './icons/VideoIcon';
 import { ShieldIcon } from './icons/ShieldIcon';
-import { LeafIcon } from './icons/LeafIcon';
 import { MenuIcon } from './icons/MenuIcon';
 import { CommunityIcon } from './icons/CommunityIcon';
+import { AlertsIcon } from './icons/AlertsIcon';
+import { CalendarIcon } from './icons/CalendarIcon';
+import { LogbookIcon } from './icons/LogbookIcon';
+import { CalculatorIcon } from './icons/CalculatorIcon';
 
-type ActiveTab = 'identifier' | 'myGarden' | 'chat' | 'video' | 'diagnosis' | 'community';
+type ActiveTab = 'identifier' | 'logbook' | 'chat' | 'video' | 'diagnosis' | 'community' | 'alerts' | 'calendar' | 'calculators';
 
 interface HeaderProps {
   activeTab: ActiveTab;
@@ -47,7 +51,7 @@ const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab }) => {
 
   return (
     <header className="bg-white/80 backdrop-blur-md sticky top-0 z-10">
-      <div className="max-w-4xl mx-auto p-4 border-b border-gray-200 flex justify-between items-center">
+      <div className="max-w-6xl mx-auto p-4 border-b border-gray-200 flex justify-between items-center">
         <div className="flex items-center gap-2">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-green-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22a7 7 0 0 0 7-7h-2a5 5 0 0 1-5 5v2z"></path><path d="M16.24 16.24a5 5 0 0 1-7.07 0l-1.42 1.42a7 7 0 0 0 9.9 0l-1.41-1.42zM5 15v-3a7 7 0 0 1 7-7 7 7 0 0 1 7 7v3"></path><path d="M12 5a2 2 0 0 1-2-2V2a2 2 0 0 1 4 0v1a2 2 0 0 1-2 2z"></path></svg>
             <h1 className="text-xl md:text-2xl font-bold text-gray-800">
@@ -61,13 +65,25 @@ const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab }) => {
             <CameraIcon className="w-5 h-5" />
             <span className="">شناسایی</span>
           </button>
-           <button onClick={() => setActiveTab('myGarden')} className={getDesktopTabClass('myGarden')}>
-            <LeafIcon className="w-5 h-5" />
-            <span className="">باغ من</span>
+           <button onClick={() => setActiveTab('logbook')} className={getDesktopTabClass('logbook')}>
+            <LogbookIcon className="w-5 h-5" />
+            <span className="">دفتر مزرعه</span>
           </button>
           <button onClick={() => setActiveTab('diagnosis')} className={getDesktopTabClass('diagnosis')}>
             <ShieldIcon className="w-5 h-5" />
-            <span className="">تشخیص بیماری</span>
+            <span className="">تشخیص</span>
+          </button>
+          <button onClick={() => setActiveTab('calendar')} className={getDesktopTabClass('calendar')}>
+            <CalendarIcon className="w-5 h-5" />
+            <span className="">تقویم</span>
+          </button>
+           <button onClick={() => setActiveTab('calculators')} className={getDesktopTabClass('calculators')}>
+            <CalculatorIcon className="w-5 h-5" />
+            <span className="">محاسبات</span>
+          </button>
+          <button onClick={() => setActiveTab('alerts')} className={getDesktopTabClass('alerts')}>
+            <AlertsIcon className="w-5 h-5" />
+            <span className="">هشدارها</span>
           </button>
           <button onClick={() => setActiveTab('community')} className={getDesktopTabClass('community')}>
             <CommunityIcon className="w-5 h-5" />
@@ -103,8 +119,11 @@ const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab }) => {
         <div className="lg:hidden" id="mobile-menu">
           <nav className="p-4 space-y-2 border-b border-gray-200 bg-white">
             <button onClick={() => handleMobileNavClick('identifier')} className={getMobileTabClass('identifier')}><CameraIcon className="w-6 h-6" /><span>شناسایی</span></button>
-            <button onClick={() => handleMobileNavClick('myGarden')} className={getMobileTabClass('myGarden')}><LeafIcon className="w-6 h-6" /><span>باغ من</span></button>
+            <button onClick={() => handleMobileNavClick('logbook')} className={getMobileTabClass('logbook')}><LogbookIcon className="w-6 h-6" /><span>دفتر مزرعه</span></button>
             <button onClick={() => handleMobileNavClick('diagnosis')} className={getMobileTabClass('diagnosis')}><ShieldIcon className="w-6 h-6" /><span>تشخیص بیماری</span></button>
+            <button onClick={() => handleMobileNavClick('calendar')} className={getMobileTabClass('calendar')}><CalendarIcon className="w-6 h-6" /><span>تقویم زراعی</span></button>
+            <button onClick={() => handleMobileNavClick('calculators')} className={getMobileTabClass('calculators')}><CalculatorIcon className="w-6 h-6" /><span>محاسبات</span></button>
+            <button onClick={() => handleMobileNavClick('alerts')} className={getMobileTabClass('alerts')}><AlertsIcon className="w-6 h-6" /><span>هشدار هوشمند</span></button>
             <button onClick={() => handleMobileNavClick('community')} className={getMobileTabClass('community')}><CommunityIcon className="w-6 h-6" /><span>انجمن</span></button>
             <button onClick={() => handleMobileNavClick('video')} className={getMobileTabClass('video')}><VideoIcon className="w-6 h-6" /><span>تحلیل ویدیو</span></button>
             <button onClick={() => handleMobileNavClick('chat')} className={getMobileTabClass('chat')}><ChatIcon className="w-6 h-6" /><span>چت‌بات</span></button>

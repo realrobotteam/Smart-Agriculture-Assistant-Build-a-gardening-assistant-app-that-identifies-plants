@@ -1,5 +1,6 @@
+
 import { GoogleGenAI, Type, Chat } from "@google/genai";
-import { PlantInfo, ChatMessage, PlantDiseaseInfo } from '../types';
+import { PlantInfo, ChatMessage, PlantDiseaseInfo, WeatherAlertsInfo, VideoAnalysisResult, CropCalendarResult } from '../types';
 
 const API_KEY = process.env.API_KEY;
 
@@ -38,41 +39,147 @@ const plantCareSchema = {
   required: ["plantName", "scientificName", "description", "isPoisonous", "careInstructions"]
 };
 
-const plantDiseaseSchema = {
+const advancedDiagnosisSchema = {
   type: Type.OBJECT,
   properties: {
-    diseaseName: { type: Type.STRING, description: "نام بیماری یا آفت شناسایی شده." },
-    description: { type: Type.STRING, description: "توضیح علائم و تأثیرات بیماری بر گیاه." },
-    severity: { type: Type.STRING, description: "سطح شدت بیماری (مانند کم، متوسط، زیاد، بحرانی)." },
-    possibleCauses: {
+    diagnoses: {
       type: Type.ARRAY,
-      items: { type: Type.STRING },
-      description: "فهرستی از دلایل احتمالی بروز این بیماری (مانند آبیاری بیش از حد، کمبود مواد مغذی، عفونت قارچی)."
-    },
-    treatment: {
-      type: Type.OBJECT,
-      properties: {
-        organic: {
-          type: Type.ARRAY,
-          items: { type: Type.STRING },
-          description: "فهرستی از روش‌های درمانی ارگانیک."
+      description: "فهرستی از تمام مشکلات شناسایی شده (بیماری‌ها، آفات، کمبود مواد مغذی).",
+      items: {
+        type: Type.OBJECT,
+        properties: {
+          issueType: { type: Type.STRING, enum: ['بیماری', 'آفت', 'کمبود مواد مغذی'], description: "نوع مشکل." },
+          issueName: { type: Type.STRING, description: "نام مشکل شناسایی شده." },
+          description: { type: Type.STRING, description: "شرح علائم و تأثیرات مشکل." },
+          severity: {
+            type: Type.OBJECT,
+            properties: {
+              level: { type: Type.STRING, enum: ['کم', 'متوسط', 'زیاد', 'بحرانی'], description: "سطح شدت." },
+              percentage: { type: Type.NUMBER, description: "درصد تخمینی درگیری گیاه (0-100)." }
+            },
+            required: ["level", "percentage"]
+          },
+          possibleCauses: { type: Type.ARRAY, items: { type: Type.STRING }, description: "فهرست دلایل احتمالی." },
+          treatment: {
+            type: Type.OBJECT,
+            properties: {
+              organic: { type: Type.ARRAY, items: { type: Type.STRING }, description: "روش‌های درمانی ارگانیک." },
+              chemical: {
+                type: Type.ARRAY,
+                description: "روش‌های درمانی شیمیایی.",
+                items: {
+                  type: Type.OBJECT,
+                  properties: {
+                    name: { type: Type.STRING, description: "نام سم یا ماده شیمیایی." },
+                    chemicalGroup: { type: Type.STRING, description: "گروه شیمیایی سم برای مدیریت مقاومت." },
+                    instructions: { type: Type.STRING, description: "دستورالعمل مصرف." }
+                  },
+                  required: ["name", "chemicalGroup", "instructions"]
+                }
+              },
+              resistanceManagementNote: { type: Type.STRING, description: "توصیه مهم برای مدیریت مقاومت به سموم، شامل چرخش بین گروه‌های شیمیایی مختلف." }
+            },
+            required: ["organic", "chemical", "resistanceManagementNote"]
+          },
+          prevention: { type: Type.ARRAY, items: { type: Type.STRING }, description: "نکات پیشگیرانه." }
         },
-        chemical: {
-          type: Type.ARRAY,
-          items: { type: Type.STRING },
-          description: "فهرستی از روش‌های درمانی شیمیایی (در صورت وجود)."
-        }
-      },
-      required: ["organic", "chemical"]
+        required: ["issueType", "issueName", "description", "severity", "possibleCauses", "treatment", "prevention"]
+      }
     },
-    prevention: {
-      type: Type.ARRAY,
-      items: { type: Type.STRING },
-      description: "فهرستی از نکات پیشگیرانه برای جلوگیری از بروز مجدد بیماری."
-    },
-    error: { type: Type.STRING, description: "پیام خطا در صورتی که بیماری قابل تشخیص نباشد یا تصویری از گیاه وجود نداشته باشد." }
+    overallHealthSummary: { type: Type.STRING, description: "یک خلاصه کلی از وضعیت سلامت گیاه." },
+    error: { type: Type.STRING, description: "پیام خطا در صورتی که هیچ مشکلی قابل تشخیص نباشد." }
   },
-  required: ["diseaseName", "description", "severity", "possibleCauses", "treatment", "prevention"]
+  required: ["diagnoses", "overallHealthSummary"]
+};
+
+const weatherAlertsSchema = {
+  type: Type.OBJECT,
+  properties: {
+    locationName: { type: Type.STRING, description: "نام شهر یا منطقه مرتبط با مختصات جغرافیایی." },
+    overallSummary: { type: Type.STRING, description: "خلاصه‌ای از وضعیت آب‌وهوا و تأثیر کلی آن بر گیاهان." },
+    alerts: {
+      type: Type.ARRAY,
+      description: "فهرستی از هشدارهای بیماری‌های احتمالی.",
+      items: {
+        type: Type.OBJECT,
+        properties: {
+          riskLevel: { type: Type.STRING, enum: ['کم', 'متوسط', 'زیاد'], description: "سطح خطر شیوع بیماری." },
+          diseaseName: { type: Type.STRING, description: "نام بیماری گیاهی که خطر آن وجود دارد." },
+          reason: { type: Type.STRING, description: "دلیل آب‌وهوایی برای این هشدار (مثلاً رطوبت بالا)." },
+          preventativeAction: { type: Type.STRING, description: "اقدام پیشگیرانه پیشنهادی." }
+        },
+        required: ["riskLevel", "diseaseName", "reason", "preventativeAction"]
+      }
+    },
+    error: { type: Type.STRING, description: "پیام خطا در صورت عدم امکان دریافت اطلاعات." }
+  },
+  required: ["locationName", "overallSummary", "alerts"]
+};
+
+const videoAnalysisSchema = {
+    type: Type.OBJECT,
+    properties: {
+        overallSummary: { type: Type.STRING, description: "یک خلاصه کلی از وضعیت سلامت کل مزرعه/ردیف نمایش داده شده در ویدیو." },
+        plantingDensity: {
+            type: Type.OBJECT,
+            properties: {
+                status: { type: Type.STRING, enum: ['بهینه', 'متراکم', 'کم‌پشت'], description: "وضعیت تراکم کاشت." },
+                recommendation: { type: Type.STRING, description: "توصیه عملی، مثلاً نیاز به تنک کردن." }
+            },
+            required: ["status", "recommendation"]
+        },
+        sections: {
+            type: Type.ARRAY,
+            description: "فهرستی از بخش‌های زمانی تحلیل شده در ویدیو.",
+            items: {
+                type: Type.OBJECT,
+                properties: {
+                    startTime: { type: Type.NUMBER, description: "زمان شروع بخش (به ثانیه)." },
+                    endTime: { type: Type.NUMBER, description: "زمان پایان بخش (به ثانیه)." },
+                    status: { type: Type.STRING, enum: ['سالم', 'مشکوک', 'بیمار'], description: "وضعیت سلامت در این بخش." },
+                    description: { type: Type.STRING, description: "شرح دقیق مشاهدات در این بخش." },
+                    issues: { type: Type.ARRAY, items: { type: Type.STRING }, description: "فهرست مشکلات خاص شناسایی شده در این بخش (بیماری، آفت، و غیره)." }
+                },
+                required: ["startTime", "endTime", "status", "description", "issues"]
+            }
+        },
+        error: { type: Type.STRING, description: "پیام خطا در صورت عدم امکان تحلیل ویدیو." }
+    },
+    required: ["overallSummary", "plantingDensity", "sections"]
+};
+
+const cropCalendarSchema = {
+    type: Type.OBJECT,
+    properties: {
+        cropName: { type: Type.STRING, description: "نام محصول وارد شده توسط کاربر." },
+        locationName: { type: Type.STRING, description: "نام منطقه جغرافیایی." },
+        plantingDate: { type: Type.STRING, description: "تاریخ کاشت وارد شده توسط کاربر." },
+        schedule: {
+            type: Type.ARRAY,
+            items: {
+                type: Type.OBJECT,
+                properties: {
+                    week: { type: Type.NUMBER, description: "شماره هفته از زمان کاشت." },
+                    dateRange: { type: Type.STRING, description: "بازه تاریخی برای آن هفته." },
+                    stage: { type: Type.STRING, description: "مرحله رشد گیاه در آن هفته." },
+                    tasks: {
+                        type: Type.ARRAY,
+                        items: {
+                            type: Type.OBJECT,
+                            properties: {
+                                taskType: { type: Type.STRING, enum: ['کوددهی', 'آبیاری', 'سم‌پاشی', 'هرس', 'بازرسی', 'برداشت', 'سایر'], description: "نوع وظیفه." },
+                                description: { type: Type.STRING, description: "شرح دقیق وظیفه." }
+                            },
+                            required: ["taskType", "description"]
+                        }
+                    }
+                },
+                required: ["week", "dateRange", "stage", "tasks"]
+            }
+        },
+        error: { type: Type.STRING, description: "پیام خطا در صورت عدم امکان ایجاد تقویم." }
+    },
+    required: ["cropName", "locationName", "plantingDate", "schedule"]
 };
 
 
@@ -113,7 +220,7 @@ export const diagnosePlantDisease = async (base64Image: string, mimeType: string
     },
   };
   const textPart = {
-    text: "گیاه موجود در این تصویر را از نظر بیماری‌ها یا آفات تحلیل کن. مشکل خاص را شناسایی کن، علائم آن را شرح بده، سطح شدت آن را (کم، متوسط، زیاد، بحرانی) تعیین کن، دلایل احتمالی را فهرست کن و روش‌های دقیق درمانی (هم ارگانیک و هم شیمیایی) و پیشگیری را ارائه بده. پاسخ را به زبان فارسی ارائه بده. اگر هیچ بیماری‌ای تشخیص داده نشد یا تصویر واضح نبود، یک شیء با 'diseaseName' برابر با 'ناشناخته' و یک فیلد 'error' که دلیل آن را توضیح می‌دهد، برگردان.",
+    text: "گیاه در تصویر را تحلیل کن. تمام مشکلات (بیماری، آفت، کمبود مواد مغذی) را شناسایی کن. برای هر مشکل: نوع، نام، شرح، شدت (کم/متوسط/زیاد/بحرانی) با درصد، دلایل، و پیشگیری را ارائه بده. برای بخش درمان: گزینه‌های ارگانیک را لیست کن. برای درمان شیمیایی، سموم رایج در ایران/خاورمیانه را پیشنهاد بده و برای هر کدام نام، گروه شیمیایی، و دستورالعمل مصرف را ذکر کن. یک نکته مهم و واضح در مورد مدیریت مقاومت از طریق چرخش گروه‌های شیمیایی مختلف ارائه بده. در آخر، یک خلاصه کلی از سلامت گیاه بنویس. پاسخ باید به زبان فارسی و مطابق اسکیمای JSON باشد.",
   };
 
   try {
@@ -122,7 +229,7 @@ export const diagnosePlantDisease = async (base64Image: string, mimeType: string
       contents: { parts: [imagePart, textPart] },
       config: {
         responseMimeType: "application/json",
-        responseSchema: plantDiseaseSchema,
+        responseSchema: advancedDiagnosisSchema,
       }
     });
     
@@ -134,7 +241,7 @@ export const diagnosePlantDisease = async (base64Image: string, mimeType: string
   }
 };
 
-export const analyzePlantVideo = async (base64Video: string, mimeType: string): Promise<string> => {
+export const analyzePlantVideo = async (base64Video: string, mimeType: string): Promise<VideoAnalysisResult> => {
   const videoPart = {
     inlineData: {
       data: base64Video,
@@ -142,19 +249,91 @@ export const analyzePlantVideo = async (base64Video: string, mimeType: string): 
     },
   };
   const textPart = {
-    text: "این ویدیوی یک گیاه را تحلیل کن. گیاه را شناسایی کن، وضعیت سلامت فعلی آن را توصیف کن و بر اساس آنچه می‌بینی، توصیه‌های دقیق مراقبتی ارائه بده. اگر علائمی از بیماری یا آفات وجود دارد، لطفاً آن‌ها را شناسایی کرده و راه‌های درمان را پیشنهاد بده. پاسخ را با استفاده از مارک‌داون و به زبان فارسی قالب‌بندی کن.",
+    text: `شما یک متخصص کشاورزی هستید که در حال بازرسی یک مزرعه از طریق ویدیو هستید. این ویدیو را به دقت تحلیل کنید. وظایف شما عبارتند از:
+۱. **تحلیل بخش به بخش**: ویدیو را به بخش‌های زمانی معنادار تقسیم کنید. برای هر بخش، وضعیت سلامت (مثلاً 'سالم'، 'مشکوک'، 'بیمار')، شرح دقیق مشاهدات، و فهرستی از مشکلات شناسایی شده (مانند بیماری‌ها، آفات، تنش آبی) را ارائه دهید.
+۲. **تحلیل تراکم کاشت**: تراکم کاشت گیاهان را ارزیابی کنید و وضعیت آن را (مثلاً 'بهینه'، 'متراکم'، 'کم‌پشت') مشخص کنید. بر اساس ارزیابی، یک توصیه عملی (مانند نیاز به تنک کردن) ارائه دهید.
+۳. **خلاصه کلی**: یک خلاصه کلی از وضعیت سلامت کل مزرعه/ردیف نمایش داده شده در ویدیو ارائه دهید.
+پاسخ را به زبان فارسی و در قالب JSON مطابق با اسکیمای ارائه شده برگردان.`,
   };
 
   try {
     const response = await ai.models.generateContent({
       model: videoAnalyzerModel,
       contents: { parts: [videoPart, textPart] },
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: videoAnalysisSchema,
+      }
     });
     
-    return response.text;
+    const jsonText = response.text.trim();
+    return JSON.parse(jsonText);
   } catch (error) {
     console.error("Error analyzing plant video:", error);
     throw new Error("تحلیل ویدیوی گیاه با مشکل مواجه شد. ممکن است مدل قادر به پردازش این ویدیو نباشد یا خطایی در API رخ داده باشد.");
+  }
+};
+
+export const getWeatherBasedAlerts = async (latitude: number, longitude: number): Promise<WeatherAlertsInfo> => {
+  try {
+    const response = await ai.models.generateContent({
+      model: plantIdentifierModel,
+      contents: `با استفاده از جستجوی وب برای دریافت اطلاعات آب‌وهوای فعلی و پیش‌بینی ۵ روز آینده برای موقعیت جغرافیایی با عرض ${latitude} و طول ${longitude}، خطرات احتمالی شیوع بیماری‌های رایج گیاهان باغی (مانند سفیدک پودری، لکه سیاه، زنگ گیاهی) را تحلیل کن. پاسخ باید شامل نام مکان، یک خلاصه کلی، و فهرستی از هشدارهای خاص باشد. هر هشدار باید شامل سطح خطر (کم، متوسط، زیاد)، نام بیماری، دلیل آب‌وهوایی، و یک اقدام پیشگیرانه پیشنهادی باشد. پاسخ را به زبان فارسی و در قالب JSON ارائه بده.`,
+      config: {
+        tools: [{googleSearch: {}}],
+        responseMimeType: "application/json",
+        responseSchema: weatherAlertsSchema,
+      },
+    });
+    
+    const jsonText = response.text.trim();
+    return JSON.parse(jsonText);
+  } catch (error) {
+    console.error("Error getting weather-based alerts:", error);
+    throw new Error("دریافت هشدارهای آب‌وهوایی با مشکل مواجه شد. لطفاً از فعال بودن موقعیت مکانی خود اطمینان حاصل کرده و دوباره تلاش کنید.");
+  }
+};
+
+export const generateCropCalendar = async (crop: string, plantingDate: string, latitude: number, longitude: number): Promise<CropCalendarResult> => {
+  try {
+    const response = await ai.models.generateContent({
+      model: plantIdentifierModel,
+      contents: `یک تقویم زراعی دقیق برای محصول '${crop}' که در تاریخ '${plantingDate}' در منطقه جغرافیایی با عرض ${latitude} و طول ${longitude} کاشته شده است، ایجاد کن. از جستجوی وب برای درک اقلیم و فصل رشد معمول این منطقه استفاده کن. تقویم باید شامل برنامه‌ زمانی وظایف کلیدی مانند کوددهی، آبیاری، سم‌پاشی پیشگیرانه، هرس، و برداشت باشد که بر اساس هفته از زمان کاشت تقسیم‌بندی شده است. برای هر دوره، مرحله رشد گیاه را مشخص کن. خروجی را به زبان فارسی و در قالب JSON ارائه بده.`,
+      config: {
+        tools: [{googleSearch: {}}],
+        responseMimeType: "application/json",
+        responseSchema: cropCalendarSchema,
+      },
+    });
+    
+    const jsonText = response.text.trim();
+    return JSON.parse(jsonText);
+  } catch (error) {
+    console.error("Error generating crop calendar:", error);
+    throw new Error("ایجاد تقویم زراعی با مشکل مواجه شد. لطفاً ورودی‌های خود را بررسی کرده و دوباره تلاش کنید.");
+  }
+};
+
+export const evaluateTreatmentEffectiveness = async (
+  base64ImageBefore: string, mimeTypeBefore: string,
+  base64ImageAfter: string, mimeTypeAfter: string,
+  originalDiagnosis: string
+): Promise<string> => {
+  const imagePartBefore = { inlineData: { data: base64ImageBefore.split(',')[1], mimeType: mimeTypeBefore } };
+  const imagePartAfter = { inlineData: { data: base64ImageAfter.split(',')[1], mimeType: mimeTypeAfter } };
+  const textPart = {
+    text: `شما یک متخصص کشاورزی هستید. یک گیاه با تشخیص اولیه '${originalDiagnosis}' تحت درمان قرار گرفته است. تصویر اول گیاه را در زمان تشخیص نشان می‌دهد و تصویر دوم همان گیاه را پس از درمان نشان می‌دهد. این دو تصویر را مقایسه کنید و اثربخشی درمان را ارزیابی کنید. آیا وضعیت گیاه بهبود یافته، ثابت مانده یا بدتر شده است؟ یک تحلیل کوتاه و واضح به زبان فارسی ارائه دهید و در صورت لزوم، توصیه‌های بیشتری ارائه کنید.`,
+  };
+
+  try {
+    const response = await ai.models.generateContent({
+      model: plantIdentifierModel,
+      contents: { parts: [imagePartBefore, textPart, imagePartAfter] },
+    });
+    return response.text.trim();
+  } catch (error) {
+    console.error("Error evaluating treatment effectiveness:", error);
+    throw new Error("ارزیابی اثربخشی درمان با مشکل مواجه شد. لطفاً دوباره تلاش کنید.");
   }
 };
 
@@ -177,7 +356,7 @@ export const createChat = (history?: ChatMessage[]): Chat => {
         model: chatModel,
         history: history,
         config: {
-            systemInstruction: "شما فلورا، یک دستیار متخصص کشاورزی هستید. لحن شما دوستانه، دلگرم‌کننده و آگاهانه است. توصیه‌های مفید و مختصر در مورد همه چیزهای مربوط به کشاورزی ارائه دهید. پاسخ‌های خود را به زبان فارسی ارائه دهید و در صورت لزوم از مارک‌داون برای قالب‌بندی لیست‌ها یا تاکید استفاده کنید.",
+            systemInstruction: "شما فلورا، یک دستیار متخصص کشاورزی هستید. لحن شما دوستانه، دلگرم‌کننده و آگاهانه است. توصیه‌های مفید و مختصر در مورد همه چیزهای مربوط به کشاورزی ارائه دهید. پاسخ‌های خود را به زبان فارسی ارائه دهید و در صورت لزوم از مارک‌داون برای قالب‌ بندی لیست‌ها یا تاکید استفاده کنید.",
         },
     });
 }

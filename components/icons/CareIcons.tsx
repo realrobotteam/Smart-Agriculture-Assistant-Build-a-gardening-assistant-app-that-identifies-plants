@@ -54,3 +54,20 @@ export const AlertTriangleIcon: React.FC<{ className?: string }> = ({ className 
     <line x1="12" y1="17" x2="12.01" y2="17" />
   </svg>
 );
+
+export const DensityIcon: React.FC<{ className?: string }> = ({ className }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <line x1="6" y1="3" x2="6" y2="21" />
+    <line x1="10" y1="3" x2="10" y2="21" />
+    <line x1="14" y1="3" x2="14" y2="21" />
+    <line x1="18" y1="3" x2="18" y2="21" />
+  </svg>
+);
+
+export const TimelineIcon: React.FC<{ className?: string }> = ({ className }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M8 6h10" />
+    <path d="M6 12h12" />
+    <path d="M4 18h14" />
+  </svg>
+);
