@@ -13,6 +13,32 @@
       body {
         font-family: 'Vazirmatn', sans-serif;
       }
+      .scan-container {
+        position: relative;
+        overflow: hidden;
+      }
+      .scan-container::after {
+        content: '';
+        position: absolute;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(90deg, transparent, rgba(52, 211, 153, 0.8), transparent);
+        box-shadow: 0 0 15px rgba(52, 211, 153, 0.8);
+        border-radius: 2px;
+        animation: scan-animation 2s infinite ease-in-out;
+      }
+      @keyframes scan-animation {
+        0% {
+            top: -5%;
+        }
+        50% {
+            top: 105%;
+        }
+        100% {
+            top: -5%;
+        }
+      }
     </style>
   <script type="importmap">
 {

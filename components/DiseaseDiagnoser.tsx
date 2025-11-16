@@ -255,7 +255,9 @@ const DiseaseDiagnoser: React.FC = () => {
         {imagePreview && (
           <div className="w-full">
             <h3 className="text-lg font-semibold text-gray-700 mb-2">عکس شما</h3>
-            <img src={imagePreview} alt="Plant preview for disease" className="rounded-lg shadow-md w-full object-cover aspect-square" />
+            <div className={`relative rounded-lg shadow-md overflow-hidden ${isLoading ? 'scan-container' : ''}`}>
+              <img src={imagePreview} alt="Plant preview for disease" className="w-full object-cover aspect-square" />
+            </div>
           </div>
         )}
 

@@ -10,6 +10,7 @@ export interface PlantCareInstructions {
 export interface PlantInfo {
   plantName: string;
   scientificName: string;
+  variety?: string;
   description: string;
   isPoisonous: boolean;
   careInstructions: PlantCareInstructions;

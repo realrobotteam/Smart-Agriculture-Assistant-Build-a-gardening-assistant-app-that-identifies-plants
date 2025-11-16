@@ -197,6 +197,9 @@ const FarmLogbook: React.FC = () => {
                             <>
                                 <h2 className="text-2xl font-bold text-gray-800">{selectedEntry.plantInfo.plantName}</h2>
                                 <p className="text-md text-gray-500 italic">{selectedEntry.plantInfo.scientificName}</p>
+                                {selectedEntry.plantInfo.variety && (
+                                    <p className="text-md font-semibold text-green-700 bg-green-100 px-2 py-0.5 rounded-full inline-block mt-2">{selectedEntry.plantInfo.variety}</p>
+                                )}
                                 <p className="mt-2 text-gray-700">{selectedEntry.plantInfo.description}</p>
                                 {selectedEntry.plantInfo.isPoisonous && (
                                     <div className="mt-3 bg-yellow-100 border-l-4 border-yellow-500 text-yellow-800 p-3 rounded-r-lg flex items-center gap-2 text-sm">

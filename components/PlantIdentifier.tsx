@@ -159,6 +159,9 @@ const PlantIdentifier: React.FC = () => {
                     <div>
                         <h2 className="text-2xl font-bold text-gray-800">{plantInfo.plantName}</h2>
                         <p className="text-md text-gray-500 italic">{plantInfo.scientificName}</p>
+                        {plantInfo.variety && (
+                            <p className="text-md font-semibold text-green-700 bg-green-100 px-2 py-0.5 rounded-full inline-block mt-2">{plantInfo.variety}</p>
+                        )}
                     </div>
                     <button 
                         onClick={handleSaveToLogbook} 
