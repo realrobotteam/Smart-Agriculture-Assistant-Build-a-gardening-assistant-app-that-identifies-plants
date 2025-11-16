@@ -1,9 +1,10 @@
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { analyzePlantImage } from '../services/geminiService';
-import { PlantInfo } from '../types';
+import { PlantInfo, SavedPlant } from '../types';
 import Spinner from './Spinner';
 import { CameraIcon } from './icons/CameraIcon';
 import { WaterDropIcon, SunIcon, SoilIcon, FertilizerIcon, PruningIcon, AlertTriangleIcon } from './icons/CareIcons';
+import { LeafIcon } from './icons/LeafIcon';
 
 const fileToBase64 = (file: File): Promise<string> =>
   new Promise((resolve, reject) => {
@@ -13,12 +14,38 @@ const fileToBase64 = (file: File): Promise<string> =>
     reader.onerror = (error) => reject(error);
   });
 
+const MY_GARDEN_KEY = 'smartAgricultureMyGarden';
+
 const PlantIdentifier: React.FC = () => {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [imageBase64, setImageBase64] = useState<string | null>(null);
   const [plantInfo, setPlantInfo] = useState<PlantInfo | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [myGarden, setMyGarden] = useState<SavedPlant[]>([]);
+  const [isSaved, setIsSaved] = useState(false);
+
+  useEffect(() => {
+    try {
+      const savedGardenJSON = localStorage.getItem(MY_GARDEN_KEY);
+      if (savedGardenJSON) {
+        setMyGarden(JSON.parse(savedGardenJSON));
+      }
+    } catch (e) {
+      console.error("Failed to load or parse My Garden from local storage:", e);
+      localStorage.removeItem(MY_GARDEN_KEY);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (plantInfo) {
+      const alreadyExists = myGarden.some(p => p.plantInfo.scientificName === plantInfo.scientificName);
+      setIsSaved(alreadyExists);
+    } else {
+      setIsSaved(false);
+    }
+  }, [plantInfo, myGarden]);
 
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -29,8 +56,9 @@ const PlantIdentifier: React.FC = () => {
       
       setIsLoading(true);
       try {
-        const base64Image = await fileToBase64(file);
-        const result = await analyzePlantImage(base64Image, file.type);
+        const base64 = await fileToBase64(file);
+        setImageBase64(`data:${file.type};base64,${base64}`);
+        const result = await analyzePlantImage(base64, file.type);
         if (result.error || result.plantName.toLowerCase() === 'unknown' || result.plantName === 'ناشناخته') {
             setError(result.error || "گیاه قابل شناسایی نبود. لطفاً یک تصویر واضح‌تر را امتحان کنید.");
             setPlantInfo(null);
@@ -44,6 +72,21 @@ const PlantIdentifier: React.FC = () => {
         setIsLoading(false);
       }
     }
+  };
+
+  const handleSaveToGarden = () => {
+    if (!plantInfo || !imageBase64 || isSaved) return;
+
+    const newPlant: SavedPlant = {
+      id: Date.now().toString(),
+      imageDataUrl: imageBase64,
+      plantInfo: plantInfo,
+      notes: ''
+    };
+
+    const updatedGarden = [...myGarden, newPlant];
+    setMyGarden(updatedGarden);
+    localStorage.setItem(MY_GARDEN_KEY, JSON.stringify(updatedGarden));
   };
 
   const handleUploadClick = () => {
@@ -107,8 +150,21 @@ const PlantIdentifier: React.FC = () => {
         {plantInfo && (
           <div className="space-y-4">
             <div className="p-4 bg-white rounded-lg shadow-sm border border-gray-200">
-                <h2 className="text-2xl font-bold text-gray-800">{plantInfo.plantName}</h2>
-                <p className="text-md text-gray-500 italic">{plantInfo.scientificName}</p>
+                <div className="flex justify-between items-start">
+                    <div>
+                        <h2 className="text-2xl font-bold text-gray-800">{plantInfo.plantName}</h2>
+                        <p className="text-md text-gray-500 italic">{plantInfo.scientificName}</p>
+                    </div>
+                    <button 
+                        onClick={handleSaveToGarden} 
+                        disabled={isSaved}
+                        className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-full transition-all duration-300 disabled:cursor-not-allowed disabled:opacity-60 bg-green-100 text-green-700 hover:bg-green-200"
+                        aria-label="ذخیره گیاه در باغ من"
+                    >
+                        <LeafIcon className="w-4 h-4" />
+                        <span>{isSaved ? 'ذخیره شد' : 'ذخیره در باغ'}</span>
+                    </button>
+                </div>
                 <p className="mt-2 text-gray-700">{plantInfo.description}</p>
                 {plantInfo.isPoisonous && (
                     <div className="mt-3 bg-yellow-100 border-l-4 border-yellow-500 text-yellow-800 p-3 rounded-r-lg flex items-center gap-2 text-sm">

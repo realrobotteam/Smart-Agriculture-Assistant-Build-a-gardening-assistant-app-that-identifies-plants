@@ -16,6 +16,13 @@ export interface PlantInfo {
   error?: string;
 }
 
+export interface SavedPlant {
+  id: string;
+  imageDataUrl: string;
+  plantInfo: PlantInfo;
+  notes?: string;
+}
+
 export interface PlantDiseaseInfo {
   diseaseName: string;
   description: string;
@@ -39,4 +46,28 @@ export interface DiseaseHistoryEntry {
 export interface ChatMessage {
   role: 'user' | 'model';
   parts: { text: string }[];
+}
+
+export interface SavedChat {
+  id: string;
+  title: string;
+  history: ChatMessage[];
+  createdAt: string;
+}
+
+export interface Comment {
+  id: string;
+  authorName: string;
+  text: string;
+  createdAt: string;
+}
+
+export interface CommunityPost {
+  id: string;
+  authorName: string;
+  text: string;
+  imageDataUrl?: string;
+  createdAt: string;
+  likes: number;
+  comments: Comment[];
 }

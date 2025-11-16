@@ -158,6 +158,20 @@ export const analyzePlantVideo = async (base64Video: string, mimeType: string): 
   }
 };
 
+export const generateChatTitle = async (firstMessage: string): Promise<string> => {
+  try {
+    const response = await ai.models.generateContent({
+      model: chatModel,
+      contents: `بر اساس این پرسش کاربر، یک عنوان کوتاه و توصیفی برای این جلسه چت ایجاد کن (حداکثر ۵ کلمه). پرسش: "${firstMessage}". فقط عنوان را برگردان.`,
+    });
+    return response.text.trim().replace(/"/g, ''); // Clean up quotes
+  } catch (error) {
+    console.error("Error generating chat title:", error);
+    // Fallback to a simpler title
+    return firstMessage.substring(0, 30) + '...';
+  }
+};
+
 export const createChat = (history?: ChatMessage[]): Chat => {
     return ai.chats.create({
         model: chatModel,
