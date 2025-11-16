@@ -43,6 +43,7 @@ const plantDiseaseSchema = {
   properties: {
     diseaseName: { type: Type.STRING, description: "نام بیماری یا آفت شناسایی شده." },
     description: { type: Type.STRING, description: "توضیح علائم و تأثیرات بیماری بر گیاه." },
+    severity: { type: Type.STRING, description: "سطح شدت بیماری (مانند کم، متوسط، زیاد، بحرانی)." },
     possibleCauses: {
       type: Type.ARRAY,
       items: { type: Type.STRING },
@@ -71,7 +72,7 @@ const plantDiseaseSchema = {
     },
     error: { type: Type.STRING, description: "پیام خطا در صورتی که بیماری قابل تشخیص نباشد یا تصویری از گیاه وجود نداشته باشد." }
   },
-  required: ["diseaseName", "description", "possibleCauses", "treatment", "prevention"]
+  required: ["diseaseName", "description", "severity", "possibleCauses", "treatment", "prevention"]
 };
 
 
@@ -112,7 +113,7 @@ export const diagnosePlantDisease = async (base64Image: string, mimeType: string
     },
   };
   const textPart = {
-    text: "گیاه موجود در این تصویر را از نظر بیماری‌ها یا آفات تحلیل کن. مشکل خاص را شناسایی کن، علائم آن را شرح بده، دلایل احتمالی را فهرست کن و روش‌های دقیق درمانی (هم ارگانیک و هم شیمیایی) و پیشگیری را ارائه بده. پاسخ را به زبان فارسی ارائه بده. اگر هیچ بیماری‌ای تشخیص داده نشد یا تصویر واضح نبود، یک شیء با 'diseaseName' برابر با 'ناشناخته' و یک فیلد 'error' که دلیل آن را توضیح می‌دهد، برگردان.",
+    text: "گیاه موجود در این تصویر را از نظر بیماری‌ها یا آفات تحلیل کن. مشکل خاص را شناسایی کن، علائم آن را شرح بده، سطح شدت آن را (کم، متوسط، زیاد، بحرانی) تعیین کن، دلایل احتمالی را فهرست کن و روش‌های دقیق درمانی (هم ارگانیک و هم شیمیایی) و پیشگیری را ارائه بده. پاسخ را به زبان فارسی ارائه بده. اگر هیچ بیماری‌ای تشخیص داده نشد یا تصویر واضح نبود، یک شیء با 'diseaseName' برابر با 'ناشناخته' و یک فیلد 'error' که دلیل آن را توضیح می‌دهد، برگردان.",
   };
 
   try {

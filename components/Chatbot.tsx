@@ -23,21 +23,13 @@ const Chatbot: React.FC = () => {
           setMessages(savedHistory);
           session = createChat(savedHistory);
         } else {
-          const initialMessage: ChatMessage = {
-            role: 'model',
-            parts: [{ text: "سلام! من فلورا، دستیار کشاورزی شما هستم. امروز چطور می‌توانم کمکتان کنم؟" }]
-          };
-          setMessages([initialMessage]);
+          setMessages([]); // Start with an empty message list
           session = createChat();
         }
       } catch (error) {
         console.error("خطا در پردازش تاریخچه چت. شروع یک جلسه جدید.", error);
         localStorage.removeItem(CHAT_HISTORY_KEY);
-        const initialMessage: ChatMessage = {
-          role: 'model',
-          parts: [{ text: "سلام! من فلورا، دستیار کشاورزی شما هستم. امروز چطور می‌توانم کمکتان کنم؟" }]
-        };
-        setMessages([initialMessage]);
+        setMessages([]); // Start fresh on error
         session = createChat();
       }
       setChatSession(session);
@@ -48,6 +40,9 @@ const Chatbot: React.FC = () => {
   useEffect(() => {
     if (messages.length > 0) {
       localStorage.setItem(CHAT_HISTORY_KEY, JSON.stringify(messages));
+    } else {
+      // If the chat is cleared, remove it from storage too
+      localStorage.removeItem(CHAT_HISTORY_KEY);
     }
   }, [messages]);
 
@@ -103,6 +98,13 @@ const Chatbot: React.FC = () => {
   return (
     <div className="flex flex-col h-[calc(100vh-150px)] max-w-2xl mx-auto bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
       <div className="flex-1 p-4 overflow-y-auto space-y-4">
+        {messages.length === 0 && (
+             <div className="flex flex-col justify-center items-center h-full text-center text-gray-500">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 text-green-400 mb-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22a7 7 0 0 0 7-7h-2a5 5 0 0 1-5 5v2z"></path><path d="M16.24 16.24a5 5 0 0 1-7.07 0l-1.42 1.42a7 7 0 0 0 9.9 0l-1.41-1.42zM5 15v-3a7 7 0 0 1 7-7 7 7 0 0 1 7 7v3"></path><path d="M12 5a2 2 0 0 1-2-2V2a2 2 0 0 1 4 0v1a2 2 0 0 1-2 2z"></path></svg>
+                <h2 className="text-xl font-semibold text-gray-700">سلام! من فلورا، دستیار کشاورزی شما هستم.</h2>
+                <p className="mt-1">امروز چطور می‌توانم کمکتان کنم؟</p>
+            </div>
+        )}
         {messages.map((msg, index) => (
           <div key={index} className={`flex ${msg.role === 'user' ? 'justify-start' : 'justify-end'}`}>
             <div
@@ -116,7 +118,7 @@ const Chatbot: React.FC = () => {
             </div>
           </div>
         ))}
-        {isLoading && messages[messages.length-1].role === 'user' && (
+        {isLoading && messages[messages.length-1]?.role === 'user' && (
              <div className="flex justify-end">
                 <div className="max-w-xs lg:max-w-md px-4 py-2 rounded-2xl bg-gray-200 text-gray-800 rounded-br-none">
                    <Spinner />

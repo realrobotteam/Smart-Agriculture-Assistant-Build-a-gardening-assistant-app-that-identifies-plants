@@ -19,6 +19,7 @@ export interface PlantInfo {
 export interface PlantDiseaseInfo {
   diseaseName: string;
   description: string;
+  severity: string;
   possibleCauses: string[];
   treatment: {
     organic: string[];
@@ -26,6 +27,13 @@ export interface PlantDiseaseInfo {
   };
   prevention: string[];
   error?: string;
+}
+
+export interface DiseaseHistoryEntry {
+  id: string;
+  date: string;
+  imageDataUrl: string;
+  diagnosis: PlantDiseaseInfo;
 }
 
 export interface ChatMessage {
