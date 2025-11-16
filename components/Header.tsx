@@ -2,8 +2,9 @@ import React from 'react';
 import { CameraIcon } from './icons/CameraIcon';
 import { ChatIcon } from './icons/ChatIcon';
 import { VideoIcon } from './icons/VideoIcon';
+import { ShieldIcon } from './icons/ShieldIcon';
 
-type ActiveTab = 'identifier' | 'chat' | 'video';
+type ActiveTab = 'identifier' | 'chat' | 'video' | 'diagnosis';
 
 interface HeaderProps {
   activeTab: ActiveTab;
@@ -28,10 +29,14 @@ const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab }) => {
                 دستیار هوشمند <span className="text-green-600">کشاورزی</span>
             </h1>
         </div>
-        <nav className="flex items-center gap-2 p-1 bg-gray-100 rounded-full">
+        <nav className="flex items-center gap-1 md:gap-2 p-1 bg-gray-100 rounded-full">
           <button onClick={() => setActiveTab('identifier')} className={getTabClass('identifier')}>
             <CameraIcon className="w-5 h-5" />
             <span className="hidden sm:inline">شناسایی</span>
+          </button>
+          <button onClick={() => setActiveTab('diagnosis')} className={getTabClass('diagnosis')}>
+            <ShieldIcon className="w-5 h-5" />
+            <span className="hidden sm:inline">تشخیص بیماری</span>
           </button>
           <button onClick={() => setActiveTab('video')} className={getTabClass('video')}>
             <VideoIcon className="w-5 h-5" />

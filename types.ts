@@ -16,6 +16,18 @@ export interface PlantInfo {
   error?: string;
 }
 
+export interface PlantDiseaseInfo {
+  diseaseName: string;
+  description: string;
+  possibleCauses: string[];
+  treatment: {
+    organic: string[];
+    chemical: string[];
+  };
+  prevention: string[];
+  error?: string;
+}
+
 export interface ChatMessage {
   role: 'user' | 'model';
   parts: { text: string }[];

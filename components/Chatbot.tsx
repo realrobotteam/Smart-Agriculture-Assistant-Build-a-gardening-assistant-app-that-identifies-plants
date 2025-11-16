@@ -4,6 +4,8 @@ import type { Chat } from '@google/genai';
 import { ChatMessage } from '../types';
 import Spinner from './Spinner';
 
+const CHAT_HISTORY_KEY = 'smartAgricultureChatHistory';
+
 const Chatbot: React.FC = () => {
   const [chatSession, setChatSession] = useState<Chat | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -13,17 +15,41 @@ const Chatbot: React.FC = () => {
 
   useEffect(() => {
     const initChat = () => {
-      const session = createChat();
-      setChatSession(session);
-      setMessages([
-        {
+      let session;
+      try {
+        const savedHistoryJSON = localStorage.getItem(CHAT_HISTORY_KEY);
+        if (savedHistoryJSON && savedHistoryJSON !== '[]') {
+          const savedHistory: ChatMessage[] = JSON.parse(savedHistoryJSON);
+          setMessages(savedHistory);
+          session = createChat(savedHistory);
+        } else {
+          const initialMessage: ChatMessage = {
+            role: 'model',
+            parts: [{ text: "سلام! من فلورا، دستیار کشاورزی شما هستم. امروز چطور می‌توانم کمکتان کنم؟" }]
+          };
+          setMessages([initialMessage]);
+          session = createChat();
+        }
+      } catch (error) {
+        console.error("خطا در پردازش تاریخچه چت. شروع یک جلسه جدید.", error);
+        localStorage.removeItem(CHAT_HISTORY_KEY);
+        const initialMessage: ChatMessage = {
           role: 'model',
           parts: [{ text: "سلام! من فلورا، دستیار کشاورزی شما هستم. امروز چطور می‌توانم کمکتان کنم؟" }]
-        }
-      ]);
+        };
+        setMessages([initialMessage]);
+        session = createChat();
+      }
+      setChatSession(session);
     };
     initChat();
   }, []);
+
+  useEffect(() => {
+    if (messages.length > 0) {
+      localStorage.setItem(CHAT_HISTORY_KEY, JSON.stringify(messages));
+    }
+  }, [messages]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -60,7 +86,15 @@ const Chatbot: React.FC = () => {
             role: 'model',
             parts: [{ text: 'متاسفم، با یک خطا مواجه شدم. لطفاً دوباره امتحان کنید.' }]
         };
-        setMessages(prev => [...prev, errorMessage]);
+        setMessages(prev => {
+            const newMessages = [...prev];
+            // Replace the streaming placeholder with the error message
+            if (newMessages.length > 0 && newMessages[newMessages.length - 1].role === 'model') {
+                newMessages[newMessages.length - 1] = errorMessage;
+                return newMessages;
+            }
+            return [...newMessages, errorMessage];
+        });
     } finally {
         setIsLoading(false);
     }

@@ -1,5 +1,5 @@
 import { GoogleGenAI, Type, Chat } from "@google/genai";
-import { PlantInfo } from '../types';
+import { PlantInfo, ChatMessage, PlantDiseaseInfo } from '../types';
 
 const API_KEY = process.env.API_KEY;
 
@@ -38,6 +38,42 @@ const plantCareSchema = {
   required: ["plantName", "scientificName", "description", "isPoisonous", "careInstructions"]
 };
 
+const plantDiseaseSchema = {
+  type: Type.OBJECT,
+  properties: {
+    diseaseName: { type: Type.STRING, description: "نام بیماری یا آفت شناسایی شده." },
+    description: { type: Type.STRING, description: "توضیح علائم و تأثیرات بیماری بر گیاه." },
+    possibleCauses: {
+      type: Type.ARRAY,
+      items: { type: Type.STRING },
+      description: "فهرستی از دلایل احتمالی بروز این بیماری (مانند آبیاری بیش از حد، کمبود مواد مغذی، عفونت قارچی)."
+    },
+    treatment: {
+      type: Type.OBJECT,
+      properties: {
+        organic: {
+          type: Type.ARRAY,
+          items: { type: Type.STRING },
+          description: "فهرستی از روش‌های درمانی ارگانیک."
+        },
+        chemical: {
+          type: Type.ARRAY,
+          items: { type: Type.STRING },
+          description: "فهرستی از روش‌های درمانی شیمیایی (در صورت وجود)."
+        }
+      },
+      required: ["organic", "chemical"]
+    },
+    prevention: {
+      type: Type.ARRAY,
+      items: { type: Type.STRING },
+      description: "فهرستی از نکات پیشگیرانه برای جلوگیری از بروز مجدد بیماری."
+    },
+    error: { type: Type.STRING, description: "پیام خطا در صورتی که بیماری قابل تشخیص نباشد یا تصویری از گیاه وجود نداشته باشد." }
+  },
+  required: ["diseaseName", "description", "possibleCauses", "treatment", "prevention"]
+};
+
 
 export const analyzePlantImage = async (base64Image: string, mimeType: string): Promise<PlantInfo> => {
   const imagePart = {
@@ -68,6 +104,35 @@ export const analyzePlantImage = async (base64Image: string, mimeType: string): 
   }
 };
 
+export const diagnosePlantDisease = async (base64Image: string, mimeType: string): Promise<PlantDiseaseInfo> => {
+  const imagePart = {
+    inlineData: {
+      data: base64Image,
+      mimeType,
+    },
+  };
+  const textPart = {
+    text: "گیاه موجود در این تصویر را از نظر بیماری‌ها یا آفات تحلیل کن. مشکل خاص را شناسایی کن، علائم آن را شرح بده، دلایل احتمالی را فهرست کن و روش‌های دقیق درمانی (هم ارگانیک و هم شیمیایی) و پیشگیری را ارائه بده. پاسخ را به زبان فارسی ارائه بده. اگر هیچ بیماری‌ای تشخیص داده نشد یا تصویر واضح نبود، یک شیء با 'diseaseName' برابر با 'ناشناخته' و یک فیلد 'error' که دلیل آن را توضیح می‌دهد، برگردان.",
+  };
+
+  try {
+    const response = await ai.models.generateContent({
+      model: plantIdentifierModel,
+      contents: { parts: [imagePart, textPart] },
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: plantDiseaseSchema,
+      }
+    });
+    
+    const jsonText = response.text.trim();
+    return JSON.parse(jsonText);
+  } catch (error) {
+    console.error("Error diagnosing plant disease:", error);
+    throw new Error("تحلیل تصویر برای تشخیص بیماری با مشکل مواجه شد. لطفاً دوباره تلاش کنید.");
+  }
+};
+
 export const analyzePlantVideo = async (base64Video: string, mimeType: string): Promise<string> => {
   const videoPart = {
     inlineData: {
@@ -92,9 +157,10 @@ export const analyzePlantVideo = async (base64Video: string, mimeType: string): 
   }
 };
 
-export const createChat = (): Chat => {
+export const createChat = (history?: ChatMessage[]): Chat => {
     return ai.chats.create({
         model: chatModel,
+        history: history,
         config: {
             systemInstruction: "شما فلورا، یک دستیار متخصص کشاورزی هستید. لحن شما دوستانه، دلگرم‌کننده و آگاهانه است. توصیه‌های مفید و مختصر در مورد همه چیزهای مربوط به کشاورزی ارائه دهید. پاسخ‌های خود را به زبان فارسی ارائه دهید و در صورت لزوم از مارک‌داون برای قالب‌بندی لیست‌ها یا تاکید استفاده کنید.",
         },
