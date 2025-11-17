@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { LogbookEntry, SavedPlant, DiseaseHistoryEntry, ManualLog, FollowUp } from '../types';
 import { evaluateTreatmentEffectiveness } from '../services/geminiService';
 import Spinner from './Spinner';
@@ -35,6 +35,10 @@ const FarmLogbook: React.FC = () => {
     const [logbook, setLogbook] = useState<LogbookEntry[]>([]);
     const [selectedEntry, setSelectedEntry] = useState<LogbookEntry | null>(null);
     const [isLoading, setIsLoading] = useState(true);
+
+    // For filtering
+    const [startDate, setStartDate] = useState('');
+    const [endDate, setEndDate] = useState('');
 
     // For manual logs
     const [showLogModal, setShowLogModal] = useState(false);
@@ -87,6 +91,33 @@ const FarmLogbook: React.FC = () => {
         setIsLoading(false);
 
     }, []);
+    
+    const filteredLogbook = useMemo(() => {
+        return logbook.filter(entry => {
+            const entryDate = new Date(entry.date);
+    
+            if (startDate) {
+                const [year, month, day] = startDate.split('-').map(Number);
+                const start = new Date(year, month - 1, day);
+                start.setHours(0, 0, 0, 0);
+                if (entryDate < start) return false;
+            }
+    
+            if (endDate) {
+                const [year, month, day] = endDate.split('-').map(Number);
+                const end = new Date(year, month - 1, day);
+                end.setHours(23, 59, 59, 999);
+                if (entryDate > end) return false;
+            }
+    
+            return true;
+        });
+    }, [logbook, startDate, endDate]);
+
+    const handleClearFilters = () => {
+        setStartDate('');
+        setEndDate('');
+    };
 
     const updateLogbook = (updatedLogbook: LogbookEntry[]) => {
         setLogbook(updatedLogbook);
@@ -267,32 +298,73 @@ const FarmLogbook: React.FC = () => {
     return (
         <div className="max-w-4xl mx-auto p-4 md:p-6">
             <h1 className="text-3xl font-bold text-gray-800 mb-6">دفتر مزرعه</h1>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                {logbook.map(entry => (
-                    <div key={entry.id} className="relative group">
-                        <button
-                            onClick={() => setSelectedEntry(entry)}
-                            className="w-full text-left bg-white rounded-lg shadow-md overflow-hidden transition-all duration-200 hover:shadow-xl hover:-translate-y-1 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
-                        >
-                            <img src={entry.imageDataUrl} alt={entry.type === 'identification' ? entry.plantInfo.plantName : entry.diagnosis.diagnoses[0].issueName} className="w-full h-32 object-cover" />
-                            <div className="p-3">
-                                <p className="font-semibold text-gray-800 truncate group-hover:whitespace-normal">
-                                  {entry.type === 'identification' ? entry.plantInfo.plantName : entry.diagnosis.diagnoses[0].issueName}
-                                </p>
-                                <p className="text-xs text-gray-500 mt-1">
-                                    {new Date(entry.date).toLocaleDateString('fa-IR')}
-                                </p>
-                            </div>
-                        </button>
-                        <button
-                            onClick={(e) => { e.stopPropagation(); handleDeleteEntry(entry.id); }}
-                            className="absolute top-1.5 right-1.5 z-10 p-1 bg-white/70 rounded-full text-red-500 hover:bg-red-100 hover:text-red-700 transition-colors opacity-0 group-hover:opacity-100"
-                        >
-                            <TrashIcon className="w-4 h-4" />
-                        </button>
-                    </div>
-                ))}
+            
+            <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 mb-6 flex flex-wrap items-end gap-4">
+                <h3 className="text-lg font-semibold text-gray-700 w-full sm:w-auto">فیلتر بر اساس تاریخ</h3>
+                <div className="flex-1 min-w-[150px]">
+                    <label htmlFor="start-date" className="block text-sm font-medium text-gray-600 mb-1">از تاریخ</label>
+                    <input
+                        type="date"
+                        id="start-date"
+                        value={startDate}
+                        onChange={e => setStartDate(e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500"
+                    />
+                </div>
+                <div className="flex-1 min-w-[150px]">
+                    <label htmlFor="end-date" className="block text-sm font-medium text-gray-600 mb-1">تا تاریخ</label>
+                    <input
+                        type="date"
+                        id="end-date"
+                        value={endDate}
+                        onChange={e => setEndDate(e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500"
+                    />
+                </div>
+                {(startDate || endDate) && (
+                    <button
+                        onClick={handleClearFilters}
+                        className="px-4 py-2 bg-gray-200 text-gray-700 font-semibold rounded-lg hover:bg-gray-300 transition-colors h-[42px]"
+                    >
+                        پاک کردن
+                    </button>
+                )}
             </div>
+
+            {filteredLogbook.length > 0 ? (
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                    {filteredLogbook.map(entry => (
+                        <div key={entry.id} className="relative group">
+                            <button
+                                onClick={() => setSelectedEntry(entry)}
+                                className="w-full text-left bg-white rounded-lg shadow-md overflow-hidden transition-all duration-200 hover:shadow-xl hover:-translate-y-1 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
+                            >
+                                <img src={entry.imageDataUrl} alt={entry.type === 'identification' ? entry.plantInfo.plantName : entry.diagnosis.diagnoses[0].issueName} className="w-full h-32 object-cover" />
+                                <div className="p-3">
+                                    <p className="font-semibold text-gray-800 truncate group-hover:whitespace-normal">
+                                    {entry.type === 'identification' ? entry.plantInfo.plantName : entry.diagnosis.diagnoses[0].issueName}
+                                    </p>
+                                    <p className="text-xs text-gray-500 mt-1">
+                                        {new Date(entry.date).toLocaleDateString('fa-IR')}
+                                    </p>
+                                </div>
+                            </button>
+                            <button
+                                onClick={(e) => { e.stopPropagation(); handleDeleteEntry(entry.id); }}
+                                className="absolute top-1.5 right-1.5 z-10 p-1 bg-white/70 rounded-full text-red-500 hover:bg-red-100 hover:text-red-700 transition-colors opacity-0 group-hover:opacity-100"
+                            >
+                                <TrashIcon className="w-4 h-4" />
+                            </button>
+                        </div>
+                    ))}
+                </div>
+            ) : (
+                <div className="text-center text-gray-500 py-10">
+                    <p>هیچ موردی با فیلترهای اعمال شده یافت نشد.</p>
+                </div>
+            )}
+
+
              {showLogModal && (
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-20" onClick={() => setShowLogModal(false)}>
                     <div className="bg-white p-6 rounded-lg shadow-xl w-full max-w-md" onClick={e => e.stopPropagation()}>
